@@ -23,6 +23,8 @@ use rex_sql;
 use rex_sql_exception;
 use rex_view;
 
+use function in_array;
+use function is_array;
 use function is_string;
 
 class OEmbedParser
@@ -144,35 +146,66 @@ class OEmbedParser
             'thumbnail' => 'auto',
         ];
 
-        // Inline-Blocker generieren
-        return InlineConsent::doConsent($serviceKey, $url, $options);
+        // Inline-Blocker generieren. Weitergereicht wird nur die aus der Video-ID
+        // neu gebaute URL, nie der Attributwert selbst: doConsent() gibt Inhalte,
+        // in denen es keine Video-ID findet, unverändert aus (Scripts mit Nonce).
+        return InlineConsent::doConsent($serviceKey, $platform['url'], $options);
     }
 
     /**
      * Plattform aus URL erkennen.
      *
+     * Erkannt werden nur http(s)-URLs auf den bekannten Hosts mit einer Video-ID
+     * im erwarteten Format. 'url' ist die aus der ID neu gebaute Adresse.
+     *
      * @api
-     * @return array{service: string, id: string, platform: string}|null
+     * @return array{service: string, id: string, platform: string, url: string}|null
      */
     private static function detectPlatform(string $videoUrl): ?array
     {
-        // YouTube
-        if ((bool) preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/', $videoUrl, $matches)) {
+        // CKE5 speichert den Attributwert HTML-kodiert (z. B. &amp; in der Query)
+        $videoUrl = html_entity_decode(trim($videoUrl), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $parts = parse_url($videoUrl);
+        if (!is_array($parts) || !isset($parts['host'])
+            || !in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) {
+            return null;
+        }
+        $host = strtolower($parts['host']);
+        $path = $parts['path'] ?? '';
+
+        // YouTube: youtube.com/watch?v=ID, youtube.com/embed/ID, youtu.be/ID
+        $youtubeId = null;
+        if (in_array($host, ['youtube.com', 'www.youtube.com', 'm.youtube.com'], true)) {
+            if ('/watch' === $path) {
+                parse_str($parts['query'] ?? '', $query);
+                $youtubeId = is_string($query['v'] ?? null) ? $query['v'] : null;
+            } elseif ((bool) preg_match('#^/embed/([^/]+)$#', $path, $matches)) {
+                $youtubeId = $matches[1];
+            }
+        } elseif ('youtu.be' === $host && (bool) preg_match('#^/([^/]+)$#', $path, $matches)) {
+            $youtubeId = $matches[1];
+        }
+        if (null !== $youtubeId) {
+            if (!(bool) preg_match('/^[a-zA-Z0-9_-]{11}$/', $youtubeId)) {
+                return null;
+            }
             return [
                 'service' => 'youtube',
                 'platform' => 'youtube',
-                'id' => $matches[1],
-                'url' => $videoUrl,
+                'id' => $youtubeId,
+                'url' => 'https://www.youtube.com/watch?v=' . $youtubeId,
             ];
         }
 
-        // Vimeo
-        if ((bool) preg_match('/vimeo\.com\/(\d+)/', $videoUrl, $matches)) {
+        // Vimeo: vimeo.com/ID
+        if (in_array($host, ['vimeo.com', 'www.vimeo.com'], true)
+            && (bool) preg_match('#^/(\d+)(?:/|$)#', $path, $matches)) {
             return [
                 'service' => 'vimeo',
                 'platform' => 'vimeo',
                 'id' => $matches[1],
-                'url' => $videoUrl,
+                'url' => 'https://vimeo.com/' . $matches[1],
             ];
         }
 

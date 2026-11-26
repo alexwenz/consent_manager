@@ -879,11 +879,11 @@
             googleConsentModeHtml = `<div style="margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-left: 4px solid #007bff; border-radius: 4px;">
                 <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #007bff;">🎯 Google Consent Mode v2 Status</h4>
                 <div style="font-size: 11px; color: #495057;">
-                    <div><strong>Modus:</strong> <span style="color: #007bff;">${modeIcon} ${modeLabel}</span></div>
-                    <div><strong>Domain:</strong> ${googleConsentModeStatus.domain}</div>
+                    <div><strong>Modus:</strong> <span style="color: #007bff;">${modeIcon} ${escapeHtml(modeLabel)}</span></div>
+                    <div><strong>Domain:</strong> ${escapeHtml(googleConsentModeStatus.domain)}</div>
                     ${googleConsentModeStatus.autoMapping ? '<div><strong>Auto-Mapping:</strong> <span style="color: #28a745;">✅ Aktiv</span></div>' : '<div><strong>Auto-Mapping:</strong> <span style="color: #6c757d;">❌ Inaktiv</span></div>'}
-                    ${googleConsentModeStatus.cacheLogId ? '<div><strong>Cache Log ID:</strong> ' + googleConsentModeStatus.cacheLogId + '</div>' : ''}
-                    ${googleConsentModeStatus.version ? '<div><strong>Version:</strong> ' + googleConsentModeStatus.version + '</div>' : ''}
+                    ${googleConsentModeStatus.cacheLogId ? '<div><strong>Cache Log ID:</strong> ' + escapeHtml(googleConsentModeStatus.cacheLogId) + '</div>' : ''}
+                    ${googleConsentModeStatus.version ? '<div><strong>Version:</strong> ' + escapeHtml(googleConsentModeStatus.version) + '</div>' : ''}
                 </div>
             </div>`;
         } else if (googleConsentModeStatus.status === 'detected') {
@@ -891,7 +891,7 @@
                 <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #856404;">🎯 Google Consent Mode v2 Status</h4>
                 <div style="font-size: 11px; color: #856404;">
                     <div><strong>Status:</strong> ⚠️ Erkannt aber nicht konfiguriert</div>
-                    <div><strong>Domain:</strong> ${googleConsentModeStatus.domain}</div>
+                    <div><strong>Domain:</strong> ${escapeHtml(googleConsentModeStatus.domain)}</div>
                 </div>
             </div>`;
         } else {
@@ -899,7 +899,7 @@
                 <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #6c757d;">🎯 Google Consent Mode v2 Status</h4>
                 <div style="font-size: 11px; color: #6c757d;">
                     <div><strong>Status:</strong> ❌ Deaktiviert</div>
-                    <div><strong>Domain:</strong> ${googleConsentModeStatus.domain}</div>
+                    <div><strong>Domain:</strong> ${escapeHtml(googleConsentModeStatus.domain)}</div>
                 </div>
             </div>`;
         }
@@ -930,15 +930,15 @@
                     const prefix = isGoogleConsentField ? '🔄 ' : '';
                     
                     return `<div class="consent-status-item ${statusClass}">
-                        <span>${prefix}${group}</span>
-                        <span>${status.toUpperCase()}</span>
+                        <span>${prefix}${escapeHtml(group)}</span>
+                        <span>${escapeHtml(String(status).toUpperCase())}</span>
                     </div>`;
                 }).join('');
-            
+
             // Zusätzliche Infos
             statusHtml += `<div style="margin-top: 10px; font-size: 10px; color: #6c757d;">
-                <div><strong>Version:</strong> ${consentManagerStatus.version}</div>
-                <div><strong>Zeitstempel:</strong> ${consentManagerStatus.timestamp}</div>`;
+                <div><strong>Version:</strong> ${escapeHtml(consentManagerStatus.version)}</div>
+                <div><strong>Zeitstempel:</strong> ${escapeHtml(consentManagerStatus.timestamp)}</div>`;
             
             if (consentManagerStatus.googleConsentMode) {
                 statusHtml += `<div><strong>Google Consent Mode:</strong> Aktiv (${Object.keys(consentManagerStatus.googleConsentMode).length} Felder)</div>`;
@@ -946,7 +946,7 @@
             
             statusHtml += '</div>';
         } else {
-            statusHtml = `<div class="no-data">${consentManagerStatus.message}</div>`;
+            statusHtml = `<div class="no-data">${escapeHtml(consentManagerStatus.message)}</div>`;
         }
         
         document.getElementById('consent-status-content').innerHTML = googleConsentModeHtml + statusHtml;
